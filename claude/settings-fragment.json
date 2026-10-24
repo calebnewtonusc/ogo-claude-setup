@@ -1,0 +1,53 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/hooks/ogo-setup/statusline.sh"
+  },
+  "includeCoAuthoredBy": false,
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/)",
+      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf $HOME)",
+      "Bash(sudo rm:*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard origin*)",
+      "Bash(dropdb:*)",
+      "Bash(gh repo delete:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.claude.json)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/ogo-setup/env-guard.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "say 'Claude needs you' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
