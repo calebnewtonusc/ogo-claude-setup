@@ -314,8 +314,15 @@ if [ "$DO_MCP" = 1 ] && [ "$HAVE_CLAUDE" = 1 ]; then
     || warn "mcp peekaboo skipped: peekaboo CLI not installed"
 
   if command -v watch-skill >/dev/null 2>&1; then have "watch-skill CLI"
-  else run uv tool install 'watch-skill[standard,ocr,loop,api]' >/dev/null 2>&1 && ok "watch-skill CLI" || warn "watch-skill install failed"; fi
-  mcp_add watch-skill -- "$HOME/.local/bin/watch-skill" serve
+  else
+    # The ocr and loop extras failed to build on an Intel Mac (2026-10-23), so step down
+    # to fewer extras before giving up.
+    for spec in 'watch-skill[standard,ocr,loop,api]' 'watch-skill[standard,api]' 'watch-skill'; do
+      run uv tool install "$spec" >/dev/null 2>&1 && { ok "watch-skill CLI ($spec)"; break; }
+    done
+    [ "$DRY_RUN" = 1 ] || [ -x "$HOME/.local/bin/watch-skill" ] || warn "watch-skill install failed: uv tool install watch-skill"
+  fi
+  if [ "$DRY_RUN" = 1 ] || [ -x "$HOME/.local/bin/watch-skill" ]; then mcp_add watch-skill -- "$HOME/.local/bin/watch-skill" serve; fi
 
   # Supabase: the hosted server signs in with OAuth, so no token lands in a file.
   mcp_add supabase --transport http https://mcp.supabase.com/mcp
