@@ -349,9 +349,12 @@ if [ "$DO_MCP" = 1 ] && [ "$HAVE_CLAUDE" = 1 ]; then
   mcp_add supabase --transport http https://mcp.supabase.com/mcp
   todo "Supabase: run /mcp, pick supabase, sign in (free tier works)"
 
-  # No token given: reuse the gh sign-in, so a first-timer never makes a token by hand.
-  [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ] && [ "$DRY_RUN" = 0 ] && GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null || true)"
-  if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+  # No token given but gh is signed in: the server asks gh for the token each time it
+  # starts, so a first-timer never makes one by hand and no token lands in ~/.claude.json.
+  if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ] && ! mcp_has github && { [ "$DRY_RUN" = 1 ] || gh auth status >/dev/null 2>&1; }; then
+    GH_BIN="$(command -v gh)"; NPX_BIN="$(command -v npx)"
+    mcp_add github -- sh -c "GITHUB_PERSONAL_ACCESS_TOKEN=\$('$GH_BIN' auth token) exec '$NPX_BIN' -y @modelcontextprotocol/server-github"
+  elif [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
     mcp_add github -e "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN" -- npx -y @modelcontextprotocol/server-github
   elif mcp_has github; then have "mcp github"
   else
