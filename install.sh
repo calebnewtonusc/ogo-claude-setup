@@ -314,10 +314,33 @@ try: d=json.load(open(os.path.expanduser("~/.claude.json")))
 except Exception: sys.exit(1)
 sys.exit(0 if sys.argv[1] in (d.get("mcpServers") or {}) else 1)' "$1"
 }
+# A server launched by the Claude app gets the GUI PATH, which has no ~/.local/bin. On a
+# Mac without Homebrew every bare npx/uvx server died with "connection closed" (Ogo,
+# 2026-10-23), so commands are stored as absolute paths with a PATH that finds node too.
+MCP_PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+mcp_bare() {  # true when a registered server's command is a bare name
+  python3 -I -c 'import json,os,sys
+d=json.load(open(os.path.expanduser("~/.claude.json")))
+c=(d.get("mcpServers") or {}).get(sys.argv[1],{}).get("command","")
+sys.exit(0 if c and "/" not in c else 1)' "$1" 2>/dev/null
+}
 mcp_add() {
   local name="$1"; shift
-  if mcp_has "$name"; then have "mcp $name"; return; fi
-  run claude mcp add -s user "$name" "$@" >/dev/null 2>&1 && ok "mcp $name" || warn "mcp $name failed to add"
+  local opts=() cmd
+  while [ $# -gt 0 ] && [ "$1" != "--" ]; do opts+=("$1"); shift; done
+  if [ $# -eq 0 ]; then  # a remote server (--transport http <url>): no local command
+    if mcp_has "$name"; then have "mcp $name"; return; fi
+    run claude mcp add -s user "$name" "${opts[@]}" >/dev/null 2>&1 && ok "mcp $name" || warn "mcp $name failed to add"
+    return
+  fi
+  shift
+  cmd="$1"; shift
+  case "$cmd" in */*) ;; *) cmd="$(command -v "$cmd" || echo "$cmd")" ;; esac
+  if mcp_has "$name"; then
+    if [ "$DRY_RUN" = 0 ] && mcp_bare "$name"; then claude mcp remove -s user "$name" >/dev/null 2>&1
+    else have "mcp $name"; return; fi
+  fi
+  run claude mcp add -s user "$name" ${opts[@]+"${opts[@]}"} -e "PATH=$MCP_PATH" -- "$cmd" "$@" >/dev/null 2>&1 && ok "mcp $name" || warn "mcp $name failed to add"
 }
 
 if [ "$DO_MCP" = 1 ] && [ "$HAVE_CLAUDE" = 1 ]; then
