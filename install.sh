@@ -64,6 +64,48 @@ INSTALLED=(); SKIPPED=(); PROBLEMS=(); NEEDS=()
 
 [ "$(uname -s)" = "Darwin" ] || { echo "This script is written for macOS."; exit 1; }
 
+# Installs git (Apple's Command Line Tools), node, uv, gh, jq and ripgrep without Homebrew.
+local_tools() {
+  local bin="$HOME/.local/bin" arch; arch="$(uname -m)"
+  run mkdir -p "$bin"
+  # The Command Line Tools bring git and python3. Apple's installer is a dialog, not a password.
+  if ! xcode-select -p >/dev/null 2>&1; then
+    run xcode-select --install >/dev/null 2>&1
+    warn "BLOCKED: click Install in the Command Line Tools window that just opened, wait for it to finish (5 to 15 min), then run ./install.sh again"
+    [ "$DRY_RUN" = 1 ] || exit 0
+  fi
+  have "git $(git --version 2>/dev/null | awk '{print $3}')"
+  local gharch=amd64 nodearch=x64 rgarch=x86_64
+  [ "$arch" = arm64 ] && { gharch=arm64; nodearch=arm64; rgarch=aarch64; }
+  # latest_asset <owner/repo> <regex>: download URL of the newest release asset that matches.
+  latest_asset() { curl -fsSL "https://api.github.com/repos/$1/releases/latest" | python3 -I -c 'import json,re,sys
+for a in json.load(sys.stdin)["assets"]:
+    if re.search(sys.argv[1], a["name"]): print(a["browser_download_url"]); break' "$2"; }
+  local t; t="$(mktemp -d)"
+  if command -v node >/dev/null 2>&1; then have "node"; elif [ "$DRY_RUN" = 1 ]; then run "install node"; else
+    local f; f="$(curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt | awk '{print $2}' | grep "darwin-$nodearch.tar.gz$")"
+    curl -fsSL "https://nodejs.org/dist/latest-v22.x/$f" | tar xz -C "$t" && rm -rf "$HOME/.local/node" && mv "$t/${f%.tar.gz}" "$HOME/.local/node" \
+      && for b in node npm npx; do ln -sf "$HOME/.local/node/bin/$b" "$bin/$b"; done && ok "node" || warn "node download failed"
+  fi
+  if command -v uv >/dev/null 2>&1; then have "uv"; else run sh -c 'curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh' >/dev/null 2>&1 && ok "uv" || warn "uv download failed"; fi
+  if command -v gh >/dev/null 2>&1; then have "gh"; elif [ "$DRY_RUN" = 1 ]; then run "install gh"; else
+    curl -fsSL -o "$t/gh.zip" "$(latest_asset cli/cli "macOS_${gharch}\\.zip$")" && (cd "$t" && unzip -q gh.zip) \
+      && cp "$t"/gh_*/bin/gh "$bin/gh" && ok "gh" || warn "gh download failed"
+  fi
+  if command -v jq >/dev/null 2>&1; then have "jq"; elif [ "$DRY_RUN" = 1 ]; then run "install jq"; else
+    curl -fsSL -o "$bin/jq" "https://github.com/jqlang/jq/releases/latest/download/jq-macos-$gharch" && chmod +x "$bin/jq" && ok "jq" || warn "jq download failed"
+  fi
+  if command -v rg >/dev/null 2>&1; then have "ripgrep"; elif [ "$DRY_RUN" = 1 ]; then run "install ripgrep"; else
+    curl -fsSL "$(latest_asset BurntSushi/ripgrep "${rgarch}-apple-darwin\\.tar\\.gz$")" | tar xz -C "$t" \
+      && cp "$t"/ripgrep-*/rg "$bin/rg" && ok "ripgrep" || warn "ripgrep download failed"
+  fi
+  rm -rf "$t"
+  # New Terminal windows need ~/.local/bin on PATH too.
+  local rc="$HOME/.zprofile"
+  grep -qs '.local/bin' "$rc" || run sh -c "printf '\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n' >> '$rc'"
+  have "peekaboo and summarize skipped (Homebrew only)"
+}
+
 # ── 1. Prerequisites ─────────────────────────────────────────────────────────
 if [ "$DO_PREREQS" = 1 ]; then
   bold "1. Prerequisites"
@@ -71,11 +113,15 @@ if [ "$DO_PREREQS" = 1 ]; then
   # Everything that doesn't need it still installs; re-run once brew exists.
   HAVE_BREW=1
   if ! command -v brew >/dev/null 2>&1; then
-    for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [ -x "$b" ] && eval "$("$b" shellenv)"; done
+    [ "${NO_BREW:-0}" = 1 ] || for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [ -x "$b" ] && eval "$("$b" shellenv)"; done
   fi
-  if ! command -v brew >/dev/null 2>&1; then
+  # Homebrew dropped Intel Macs (2026-10-23 on an Intel MacBook Pro: "Homebrew on macOS
+  # is only supported on Apple Silicon processors!"), so without brew every tool comes
+  # from its own official release into ~/.local, with no password.
+  export PATH="$HOME/.local/bin:$PATH"
+  if [ "${NO_BREW:-0}" = 1 ] || ! command -v brew >/dev/null 2>&1; then
     HAVE_BREW=0
-    warn "BLOCKED: Homebrew is missing. It needs your Mac password: run the one line from https://brew.sh in Terminal, then run ./install.sh again for the tools and MCP servers"
+    local_tools
   fi
   [ "$HAVE_BREW" = 1 ] && for pkg in git node uv gh jq ripgrep python@3.13; do
     bin="$pkg"; case "$pkg" in ripgrep) bin=rg ;; python@3.13) bin=python3 ;; esac

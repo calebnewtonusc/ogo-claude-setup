@@ -9,8 +9,11 @@ have and never overwrites your files.
 
 Open the Claude app, go to the Code tab, paste this repo's link and say "set me
 up from this". Or paste [SETUP-FOR-CLAUDE.md](SETUP-FOR-CLAUDE.md). Claude does
-every step, checks each one and tells you which logins are left. The only step
-that needs you is Homebrew, because it asks for your Mac password.
+every step, checks each one and tells you which logins are left. You don't need
+Homebrew (it dropped Intel Macs): the installer pulls git from Apple's Command
+Line Tools and node, uv, gh, jq and ripgrep from their official releases into
+`~/.local/bin`, no password. The one click is Install on Apple's Command Line
+Tools window.
 
 ## What you get
 
@@ -29,8 +32,8 @@ that needs you is Homebrew, because it asks for your Mac password.
 
 ## By hand
 
-1. Homebrew from https://brew.sh (needs your Mac password).
-2. `git clone https://github.com/calebnewtonusc/ogo-claude-setup ~/code/ogo-claude-setup && cd ~/code/ogo-claude-setup`
+1. `mkdir -p ~/code/ogo-claude-setup && curl -fsSL https://codeload.github.com/calebnewtonusc/ogo-claude-setup/tar.gz/HEAD | tar xz -C ~/code/ogo-claude-setup --strip-components 1 && cd ~/code/ogo-claude-setup`
+2. If Homebrew is already installed it gets used, otherwise nothing extra is needed.
 3. `./install.sh --dry-run` to preview, then `./install.sh`. Run it twice: the
    second run should add nothing.
 4. Restart Claude Code, run `/mcp` and sign in to the servers that ask.

@@ -13,9 +13,9 @@ only stop for things that need my hands (my Mac password, a browser sign-in).
    If not, download it: `mkdir -p ~/code/ogo-claude-setup && curl -fsSL https://github.com/calebnewtonusc/ogo-claude-setup/archive/refs/heads/main.tar.gz | tar xz -C ~/code/ogo-claude-setup --strip-components 1`
 2. Read `README.md` and `install.sh` in full so you know what each step does.
 3. Run `./install.sh --dry-run` and tell me in a few lines what it will add.
-4. Run `./install.sh`. If it says Homebrew is missing, tell me to open Terminal and
-   paste the one line from https://brew.sh (it asks for my Mac password), wait
-   for me, then run `./install.sh` again.
+4. Run `./install.sh`. Don't install Homebrew: it no longer supports Intel Macs,
+   and the installer gets every tool without it. If a Command Line Tools window
+   opens, tell me to click Install, wait for it to finish, then run `./install.sh` again.
 5. Run `./install.sh` once more and confirm it reports nothing new.
 6. Check, with a pass or fail line each: `claude plugin list` shows the plugins in
    `CATALOG.md`, `claude mcp list` shows the MCP servers, every skill link in
