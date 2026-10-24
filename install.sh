@@ -164,8 +164,10 @@ fetch_repo() {
     # No git yet (fresh Mac). A sparse source is too big to pull as a tarball, so it waits.
     [ -d "$dir" ] && return 0
     [ $# -gt 0 ] && { warn "$name waits for git (re-run after Homebrew)"; return 1; }
-    local branch; branch="$(curl -fsSL "https://api.github.com/repos/${url#https://github.com/}" 2>/dev/null | python3 -I -c 'import json,sys;print(json.load(sys.stdin).get("default_branch","main"))' 2>/dev/null || echo main)"
-    run mkdir -p "$dir" && run bash -c "curl -fsSL '$url/archive/refs/heads/$branch.tar.gz' | tar xz -C '$dir' --strip-components 1" \
+    # codeload's HEAD tarball needs no branch name, so nothing from the network reaches a shell string.
+    local repo="${url#https://github.com/}"
+    case "$repo" in *[!A-Za-z0-9._/-]*) warn "bad repo url $url"; return 1;; esac
+    run mkdir -p "$dir" && { [ "$DRY_RUN" = 1 ] || curl -fsSL "https://codeload.github.com/$repo/tar.gz/HEAD" | tar xz -C "$dir" --strip-components 1; } \
       || { warn "could not download $url"; return 1; }
     return 0
   fi
