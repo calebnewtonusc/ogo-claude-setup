@@ -33,6 +33,14 @@ rewrites a copy you've edited.
 - **No unverified specifics in anything that goes out.** Dollar figures, names,
   dates, metrics. If there's no source, leave `[NEED: ...]` instead.
 
+## Checks, run them, don't eyeball
+
+- `agent-check`: typecheck plus the slop checks on what's staged. Run it before
+  saying a change is done. `agent-hook-init` adds it as a repo's pre-commit hook.
+- `slop-check <file.md> --issues`: structural AI tells in prose. Over 19 is "rewrite".
+- `code-slop --issues`: AI-authorship tells in the working-tree diff.
+- After every Write or Edit, a hook scores the file and tells you what fired. Fix it.
+
 ## Debugging, in this order
 
 1. Read the full error exactly.
@@ -52,12 +60,16 @@ Applies to chat, docs, comments, commit messages and UI copy.
 
 - No em dashes. Use a colon, period or comma.
 - No emojis in anything that ships (code, commits, docs, UI copy).
-- No "it's not X, it's Y", no throat-clearing ("Here's the thing"), no colon
-  reveals ("The best part: it learns"), no closing recap, no fake-profound
+- No `it's not X, it's Y`, no throat-clearing (`Here's the thing`), no colon
+  reveals (`The best part: it learns`), no closing recap, no fake-profound
   closing line.
-- Banned words: delve, foster, leverage, utilize, facilitate, empower,
-  streamline, robust, seamless, cutting-edge, game changer, transformative,
-  elevate, harness, meticulous, intricate, realm, tapestry.
+- Banned words:
+
+  ```
+  delve foster leverage utilize facilitate empower streamline robust seamless
+  cutting-edge game-changer transformative elevate harness meticulous intricate
+  realm tapestry
+  ```
 - Be concrete: "cut deploy time from 40 minutes to 4" beats "improved
   efficiency".
 - In chat, answer first and match the length of the message you're answering.
@@ -77,9 +89,9 @@ Applies to chat, docs, comments, commit messages and UI copy.
 ## UI work
 
 Before shipping UI, ask: does this look like a real product page or a polished
-Dribbble shot? No default browser blue links, no unstyled buttons, no
-placeholder copy, no layout that breaks on mobile, no missing hover, loading,
-empty or error states. Check the mobile view before calling it done.
+Dribbble shot? Links and buttons carry the product's own styling, copy is real,
+the layout holds at phone width, and every control has hover, loading, empty and
+error states. Check the mobile view before calling it done.
 
 ## Video and screen tools
 

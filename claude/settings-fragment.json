@@ -48,6 +48,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hooks/ogo-setup/slop-after-edit.py",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }

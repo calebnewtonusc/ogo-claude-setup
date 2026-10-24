@@ -25,6 +25,30 @@ The tracks:
 2. Help someone just baptized tell their story in their own words and share it with their church.
 3. Help a church walk a newly baptized person through their first 30 days.
 
+## Our build: Anchored (Track 3, first 30 days after baptism)
+
+The repo is `calebnewtonusc/anchored`, a Next.js and TypeScript app on Railway. Read SPEC.md,
+TEAM.md and AGENTS.md in the repo before touching anything: they win over this list
+if they disagree. Lanes, and nobody edits another lane's files:
+
+- **Ogo (Mac, Claude Code):** the WhatsApp interface, plus the rhythm and behavior of
+  the agent toward the baptizee and the baptizer: when it messages each of them, what
+  it says after a slip, a hard moment, silence, and on days 7, 14, 21 and 30, how it
+  syncs into the dashboard, and what a church can customize. Owns `bridge/`,
+  `content/days.json` and `docs/agent-rhythm.md`. Write the rhythm spec first, then
+  run the bridge against the dev server with `--log` and prove a round trip from a
+  second phone: ANCHORED, YES, a reply, an outbox message.
+- **Anthony (Linux, Codex):** the dashboard for ministries, leaders and friends.
+  Owns `app/discipler/` and `app/page.tsx`.
+- **Caleb:** AI infra, deployment and the Mac HUD. Owns `lib/companion.ts`,
+  `lib/engine.ts`, `lib/store.ts`, `os/`, `prompts/` and Railway.
+
+`lib/types.ts` is the shared contract: change it only after the whole team agrees out
+loud. Every verse carries its reference and comes from `content/`. Use test phone numbers
+in the 555 range only. Turn on the repo's pre-commit checks once per clone with
+`git config core.hooksPath .githooks`, and run `scripts/check.sh` before saying a
+change is done. Pull before every push: three people push to main today.
+
 ## How to run the build
 
 1. **Demo path first.** Write the 3-minute demo as a list of taps before writing code.

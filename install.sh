@@ -412,12 +412,26 @@ if [ "$DO_CONFIG" = 1 ]; then
 
   # Hooks live in their own folder so they can never collide with yours.
   run mkdir -p "$CLAUDE_DIR/hooks/ogo-setup"
-  for f in "$HERE/claude/hooks"/*.sh; do
+  for f in "$HERE/claude/hooks"/*.sh "$HERE/claude/hooks"/*.py; do
     dst="$CLAUDE_DIR/hooks/ogo-setup/$(basename "$f")"
     if [ -e "$dst" ] && cmp -s "$f" "$dst"; then have "hook $(basename "$f")"
     elif [ -e "$dst" ]; then have "hook $(basename "$f") (you edited it, left alone)"
     else run cp "$f" "$dst" && run chmod +x "$dst" && ok "hook $(basename "$f")"; fi
   done
+
+  # Shell checks: slop-check (prose), code-slop (code diff), ai-scan, and agent-check,
+  # which runs typecheck plus both on staged files. Copied into the setup folder on
+  # every run so a re-download updates them, then linked onto PATH once.
+  run mkdir -p "$SETUP_DIR/bin" "$HOME/.local/bin"
+  for f in "$HERE"/bin/*; do
+    [ -f "$f" ] || continue
+    n="$(basename "$f")" dst="$HOME/.local/bin/$(basename "$f")"
+    if [ "$DRY_RUN" = 0 ]; then cp "$f" "$SETUP_DIR/bin/$n" && chmod +x "$SETUP_DIR/bin/$n"; fi
+    if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$SETUP_DIR/bin/$n" ]; then have "$n"
+    elif [ -e "$dst" ] || [ -L "$dst" ]; then have "$n (you already have one, left alone)"
+    else run ln -s "$SETUP_DIR/bin/$n" "$dst" && ok "$n on PATH"; fi
+  done
+  grep -qs '.local/bin' "$HOME/.zprofile" || run sh -c "printf '\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n' >> '$HOME/.zprofile'"
 
   # CLAUDE.md: copy the add-on, then add one @import line to yours if it isn't there.
   copy_if_absent "$HERE/claude/CLAUDE-addon.md" "$SETUP_DIR/CLAUDE-addon.md" "CLAUDE-addon.md"
