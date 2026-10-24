@@ -103,7 +103,28 @@ for a in json.load(sys.stdin)["assets"]:
   # New Terminal windows need ~/.local/bin on PATH too.
   local rc="$HOME/.zprofile"
   grep -qs '.local/bin' "$rc" || run sh -c "printf '\nexport PATH=\"\$HOME/.local/bin:\$PATH\"\n' >> '$rc'"
-  have "peekaboo and summarize skipped (Homebrew only)"
+  local pk sm; pk=x86_64; sm=x64; [ "$arch" = arm64 ] && { pk=arm64; sm=arm64; }
+  if command -v peekaboo >/dev/null 2>&1; then have "peekaboo"; elif [ "$DRY_RUN" = 1 ]; then run "install peekaboo"; else
+    t="$(mktemp -d)"; curl -fsSL "$(latest_asset steipete/Peekaboo "peekaboo-macos-${pk}\\.tar\\.gz$")" | tar xz -C "$t" \
+      && rm -rf "$HOME/.local/peekaboo" && mv "$(dirname "$(find "$t" -type f -name peekaboo -perm -u+x | head -1)")" "$HOME/.local/peekaboo" \
+      && ln -sf "$HOME/.local/peekaboo/peekaboo" "$bin/peekaboo" && ok "peekaboo" || warn "peekaboo download failed"; rm -rf "$t"
+  fi
+  if command -v summarize >/dev/null 2>&1; then have "summarize"; elif [ "$DRY_RUN" = 1 ]; then run "install summarize"; else
+    t="$(mktemp -d)"; curl -fsSL "$(latest_asset steipete/summarize "summarize-macos-${sm}-.*\\.tar\\.gz$")" | tar xz -C "$t" \
+      && cp "$(find "$t" -type f -name summarize -perm -u+x | head -1)" "$bin/summarize" && ok "summarize" || warn "summarize download failed"; rm -rf "$t"
+  fi
+  # yt-transcript wants yt-dlp and ffmpeg. ffmpeg-static ships a signed-free static build per arch.
+  if command -v yt-dlp >/dev/null 2>&1; then have "yt-dlp"; else run uv tool install yt-dlp >/dev/null 2>&1 && ok "yt-dlp" || warn "yt-dlp install failed"; fi
+  if command -v ffmpeg >/dev/null 2>&1; then have "ffmpeg"; else
+    run "$bin/npm" install --silent --prefix "$HOME/.local/ffmpeg-static" ffmpeg-static >/dev/null 2>&1 \
+      && run ln -sf "$HOME/.local/ffmpeg-static/node_modules/ffmpeg-static/ffmpeg" "$bin/ffmpeg" && ok "ffmpeg" || warn "ffmpeg install failed"
+  fi
+  # GitHub sign-in, so pushing code and the GitHub MCP both work. Only when someone is at the keyboard.
+  if gh auth status >/dev/null 2>&1; then have "gh signed in"
+  elif [ "$DRY_RUN" = 0 ] && [ -t 0 ]; then
+    echo "  GitHub sign-in: copy the code below, then press Enter to open the browser"
+    gh auth login --web -h github.com -p https && ok "gh signed in" || warn "gh sign-in didn't finish: gh auth login --web"
+  else todo "GitHub: gh auth login --web"; fi
 }
 
 # ── 1. Prerequisites ─────────────────────────────────────────────────────────
@@ -328,6 +349,8 @@ if [ "$DO_MCP" = 1 ] && [ "$HAVE_CLAUDE" = 1 ]; then
   mcp_add supabase --transport http https://mcp.supabase.com/mcp
   todo "Supabase: run /mcp, pick supabase, sign in (free tier works)"
 
+  # No token given: reuse the gh sign-in, so a first-timer never makes a token by hand.
+  [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ] && [ "$DRY_RUN" = 0 ] && GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null || true)"
   if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
     mcp_add github -e "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN" -- npx -y @modelcontextprotocol/server-github
   elif mcp_has github; then have "mcp github"
