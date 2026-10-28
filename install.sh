@@ -25,7 +25,7 @@ usage() {
 Usage: ./install.sh [flags]
 
   --dry-run        Print every action, change nothing.
-  --no-prereqs     Skip Homebrew packages (git, node, uv, gh, jq, peekaboo...).
+  --no-prereqs     Skip the tools (git, node, uv, gh, jq, peekaboo...).
   --no-plugins     Skip plugin marketplaces and plugins.
   --no-skills      Skip skills.
   --no-mcp         Skip MCP servers.
@@ -33,7 +33,7 @@ Usage: ./install.sh [flags]
   --with-runpod    Also install the RunPod plugin (GPU cloud, paid account).
 
 Environment:
-  GITHUB_PERSONAL_ACCESS_TOKEN   set it to register the GitHub MCP server
+  GITHUB_PERSONAL_ACCESS_TOKEN   optional: the GitHub MCP server uses your gh sign-in without it
   TODOIST_API_TOKEN              set it to register the Todoist MCP server
 USAGE
 }
@@ -122,9 +122,10 @@ for a in json.load(sys.stdin)["assets"]:
   # GitHub sign-in, so pushing code and the GitHub MCP both work. Only when someone is at the keyboard.
   if gh auth status >/dev/null 2>&1; then have "gh signed in"
   elif [ "$DRY_RUN" = 0 ] && [ -t 0 ]; then
-    echo "  GitHub sign-in: copy the code below, then press Enter to open the browser"
+    echo "  GitHub sign-in: copy the code below, then press Enter to open the browser."
+    echo "  The page may open behind this window. Press Command Tab to find it."
     gh auth login --web -h github.com -p https && ok "gh signed in" || warn "gh sign-in didn't finish: gh auth login --web"
-  else todo "GitHub: gh auth login --web"; fi
+  else todo "GitHub: gh auth login --web (it shows a code and opens a browser page, which may land behind the Claude window)"; fi
 }
 
 # ── 1. Prerequisites ─────────────────────────────────────────────────────────
@@ -381,8 +382,9 @@ if [ "$DO_MCP" = 1 ] && [ "$HAVE_CLAUDE" = 1 ]; then
     mcp_add github -e "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN" -- npx -y @modelcontextprotocol/server-github
   elif mcp_has github; then have "mcp github"
   else
-    warn "mcp github skipped: no GITHUB_PERSONAL_ACCESS_TOKEN"
-    todo "GitHub MCP: make a fine-grained token (github.com/settings/personal-access-tokens, only the repos you want) and re-run as GITHUB_PERSONAL_ACCESS_TOKEN=<token> ./install.sh --no-prereqs --no-plugins --no-skills --no-config"
+    # No token to make by hand: once gh is signed in, the next run reads the token from gh.
+    warn "mcp github waits for GitHub sign-in"
+    todo "GitHub MCP: gh auth login --web (it shows a code and opens a browser page, which may land behind the Claude window), then ./install.sh again"
   fi
 
   if [ -n "${TODOIST_API_TOKEN:-}" ]; then

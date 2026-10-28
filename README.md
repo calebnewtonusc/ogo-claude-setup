@@ -5,15 +5,53 @@ hackathon. It adds plugins, MCP servers, skills, coding rules, three subagents,
 a status line and a safety hook. It merges into whatever `~/.claude` you already
 have and never overwrites your files.
 
-## Fastest way
+## Start here: use the Code tab
 
-Open the Claude app, go to the Code tab, paste this repo's link and say "set me
-up from this". Or paste [SETUP-FOR-CLAUDE.md](SETUP-FOR-CLAUDE.md). Claude does
-every step, checks each one and tells you which logins are left. You don't need
-Homebrew (it dropped Intel Macs): the installer pulls git from Apple's Command
-Line Tools and node, uv, gh, jq and ripgrep from their official releases into
-`~/.local/bin`, no password. The one click is Install on Apple's Command Line
-Tools window.
+Open the Claude desktop app and click the `</>` icon at the top left to switch to
+the Code tab. Do this before you paste anything. The regular chat tab can't touch
+your Mac, so it can't run the installer, and it'll tell you to link GitHub in
+Settings, Connectors. You don't need that. The installer signs you in to GitHub
+itself.
+
+In the Code tab, pick your home folder as the folder to work in, then paste this:
+
+```
+Set up Claude Code on my Mac from https://github.com/calebnewtonusc/ogo-claude-setup.
+Download it into ~/code/ogo-claude-setup (use curl if git isn't installed yet),
+then follow its SETUP-FOR-CLAUDE.md step by step and do every step yourself.
+Before anything opens a window, shows me a code, or asks for a password, tell me
+what's about to appear and exactly what to click. When you're done, write a PDF
+to my Downloads folder called "ogo setup snags.pdf" listing every snag we hit and
+how it got fixed, so I can send it to Caleb.
+```
+
+That's the whole setup. Claude does every step, checks each one and tells you
+which logins are left. You don't need Homebrew (it dropped Intel Macs): the
+installer pulls git from Apple's Command Line Tools and node, uv, gh, jq and
+ripgrep from their official releases into `~/.local/bin`, no password.
+
+### What will pop up
+
+Claude should warn you before each of these, but here they are so nothing
+surprises you:
+
+- **Apple's Command Line Tools window.** Click Install and wait 5 to 15 minutes.
+  Claude then runs the installer again.
+- **GitHub sign-in.** Claude shows you a code like `ABCD-1234`, and a GitHub page
+  opens in your web browser. That page often opens behind the Claude window, so
+  press Command Tab to find your browser. Make sure it's signed in to your own
+  GitHub account, paste the code, click Authorize, then come back to Claude.
+- **Sign-ins inside Claude Code.** After setup, `/mcp` lists servers like Vercel
+  and Supabase. Each one you pick opens its own browser tab to sign in. Same
+  thing: it may land behind Claude.
+- **macOS permission prompts**, the first time Claude uses peekaboo (screenshots)
+  or macos-automator (driving Mac apps). They ask for Screen Recording,
+  Accessibility or Automation in System Settings. Turn on the one it names.
+- **A spoken "Claude needs you".** That's the notification hook, not a bug. It
+  talks when Claude is waiting on you.
+
+When it's done, quit the Claude app (Command Q) and open it again, so it loads
+the new plugins, skills and MCP servers.
 
 ## What you get
 
@@ -26,8 +64,12 @@ Tools window.
 - **Rules** for security, TypeScript, naming, UI and deploys, so code comes out
   right the first time.
 - **Subagents**: code-reviewer, debugger, explorer.
-- **Hooks**: a status line (folder, branch, model, context used) and a warning
-  before Claude writes a `.env` file.
+- **Hooks**: a status line (folder, branch, model, context used), a warning
+  before Claude writes a `.env` file, a slop check after every file edit, and a
+  spoken "Claude needs you" when it's waiting on you.
+- **Checks on your PATH**: `slop-check` (prose), `code-slop` (code), `ai-scan`,
+  and `agent-check`, which runs a typecheck plus slop-check and code-slop on
+  staged files.
 - **MCP servers and plugins**, each with what it's for, in [CATALOG.md](CATALOG.md).
 
 ## By hand
@@ -36,7 +78,10 @@ Tools window.
 2. If Homebrew is already installed it gets used, otherwise nothing extra is needed.
 3. `./install.sh --dry-run` to preview, then `./install.sh`. Run it twice: the
    second run should add nothing.
-4. Restart Claude Code, run `/mcp` and sign in to the servers that ask.
+4. If `gh auth status` says you're not signed in, run `gh auth login --web`,
+   then `./install.sh` once more so the GitHub MCP server gets added.
+5. Restart Claude Code, run `/mcp` and sign in to the servers that ask. Each
+   sign-in opens a browser tab, which may land behind the Claude window.
 
 Sections run on their own: `--no-prereqs`, `--no-plugins`, `--no-skills`,
 `--no-mcp`, `--no-config`. `./install.sh --help` lists them. `tests/smoke.sh`

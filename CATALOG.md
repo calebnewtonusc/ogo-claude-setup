@@ -38,16 +38,17 @@ the tool runs without an account or with a free one.
 | macos-automator     | `npx @steipete/macos-automator-mcp`                              | Runs AppleScript and JXA to drive Mac apps                 | Automation permission on first use            | No                                    |
 | chart               | `npx @antv/mcp-server-chart`                                     | Renders charts from data                                   | Nothing                                       | No                                    |
 | blender             | `uvx blender-mcp`                                                | Builds and edits 3D scenes in Blender                      | Blender plus the blender-mcp add-on           | No                                    |
-| peekaboo            | `peekaboo mcp serve` (brew `steipete/tap/peekaboo`)              | Screenshots and clicks in any Mac app                      | Screen Recording and Accessibility permission | No                                    |
+| peekaboo            | `peekaboo mcp serve` (release download, or brew if you have it)  | Screenshots and clicks in any Mac app                      | Screen Recording and Accessibility permission | No                                    |
 | watch-skill         | `uv tool install watch-skill`, then `watch-skill serve`          | Watches and indexes videos, answers questions about them   | Optional vision API key or local Ollama       | No (a vision provider can cost money) |
 | supabase            | remote `https://mcp.supabase.com/mcp`                            | Query and manage Supabase projects                         | Supabase login via `/mcp`                     | No (free tier)                        |
-| github              | `npx @modelcontextprotocol/server-github`                        | Issues, PRs, code search across GitHub                     | `GITHUB_PERSONAL_ACCESS_TOKEN`                | No                                    |
+| github              | `npx @modelcontextprotocol/server-github`                        | Issues, PRs, code search across GitHub                     | `gh` signed in (reads its token at startup)   | No                                    |
 | todoist (optional)  | `npx @greirson/mcp-todoist`                                      | Todoist tasks from Claude                                  | `TODOIST_API_TOKEN`                           | No (free plan works)                  |
 
 ## Connectors (claude.ai and the desktop app)
 
-These aren't installed by a script. Turn them on at claude.ai, Settings,
-Connectors. They then show up in Claude Code too when you're signed in with the
+These are optional extras, and setup doesn't need any of them. GitHub isn't one:
+the installer signs you in to GitHub itself. Turn the ones you want on at
+claude.ai, Settings, Connectors. They then show up in Claude Code too when you're signed in with the
 same account.
 
 | Connector       | What it does                        | Why                                        | Paid account?                                 |
@@ -65,9 +66,9 @@ same account.
 
 What's left after install.sh, in the order worth doing it:
 
-1. **GitHub CLI**: `gh auth login --web`. Needed to push your own code and for the GitHub MCP.
-2. **GitHub MCP token**: re-run `GITHUB_PERSONAL_ACCESS_TOKEN=<YOUR_GITHUB_TOKEN> ./install.sh --no-prereqs --no-plugins --no-skills --no-config`.
-3. **Plugin and remote MCP sign-ins**: in Claude Code run `/mcp`, then sign in to context7, vercel, railway, expo and supabase (and runpod if you opted in).
+1. **GitHub CLI**: `gh auth login --web`. Needed to push your own code and for the GitHub MCP. It shows a code and opens a browser page, which may land behind the Claude window.
+2. **GitHub MCP**: after step 1, run `./install.sh` again. It adds the server using your gh sign-in, so there's no token to make.
+3. **Plugin and remote MCP sign-ins**: in Claude Code run `/mcp`, then sign in to context7, vercel, railway, expo and supabase (and runpod if you opted in). Each one opens a browser tab.
 4. **macOS permissions**: the first time peekaboo or macos-automator runs, approve Screen Recording, Accessibility and Automation in System Settings, Privacy and Security.
 5. **Connectors**: claude.ai, Settings, Connectors, then connect the ones above you want.
 6. **Optional keys**: `TODOIST_API_TOKEN` (todoist.com, Settings, Integrations, Developer), and a vision key for watch-skill (`watch-skill setup` walks you through it).

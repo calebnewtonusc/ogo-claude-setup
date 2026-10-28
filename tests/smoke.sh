@@ -31,4 +31,19 @@ OUT="$(printf '{"cwd":"%s","tool_name":"Write","tool_input":{"file_path":"%s"}}'
 [ -z "$OUT" ] || { echo "hook flagged clean prose: $OUT"; exit 1; }
 R="$T/repo"; mkdir "$R"; git -C "$R" init -q; cp "$T/bad.md" "$R/notes.md"; git -C "$R" add notes.md
 ! (cd "$R" && "$H/.local/bin/agent-check" >/dev/null) || { echo "agent-check passed a slop commit"; exit 1; }
+# Docs drift: every plugin and MCP server install.sh adds has a CATALOG.md row, every
+# subagent is named in the README, and the README starts people in the Code tab. A
+# teammate on a sibling setup repo lost an hour on 2026-10-27 to the chat tab and to
+# docs that described an old layout.
+for p in $(sed -n '/^PLUGINS=(/,/^)/p' "$HERE/install.sh" | grep -oE '^  [a-z0-9-]+@' | tr -d ' @'); do
+  grep -q "^| $p" "$HERE/CATALOG.md" || { echo "plugin $p missing from CATALOG.md"; exit 1; }
+done
+for m in $(grep -oE 'mcp_add [a-z][a-z-]+' "$HERE/install.sh" | awk '{print $2}' | sort -u); do
+  grep -q "^| $m " "$HERE/CATALOG.md" || { echo "mcp $m missing from CATALOG.md"; exit 1; }
+done
+for a in "$HERE"/claude/agents/*.md; do n="$(basename "$a" .md)"; grep -q "$n" "$HERE/README.md" || { echo "agent $n missing from README"; exit 1; }; done
+grep -q 'Code tab' "$HERE/README.md" && grep -qF '`</>`' "$HERE/README.md" || { echo "README lost the Code tab step"; exit 1; }
+grep -q 'snags.pdf' "$HERE/README.md" || { echo "README lost the snag report ask"; exit 1; }
+! grep -q 'GITHUB_PERSONAL_ACCESS_TOKEN=<' "$HERE/CATALOG.md" "$HERE/README.md" || { echo "docs still make people create a GitHub token by hand"; exit 1; }
+echo "docs ok"
 echo "smoke ok"
